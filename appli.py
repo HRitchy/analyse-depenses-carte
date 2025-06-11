@@ -249,11 +249,5 @@ if uploaded_file:
         )
         st.dataframe(styled_df, use_container_width=True, height=460)
 
-
-    st.markdown(
-        "<div style='text-align:right;font-size:0.95rem;color:#888;'>Thème clair/sombre auto selon vos préférences système (voir Paramètres Streamlit).</div>",
-        unsafe_allow_html=True
-    )
-
 else:
     st.info("Importez un relevé bancaire PDF pour démarrer l’analyse (étape 1).")
