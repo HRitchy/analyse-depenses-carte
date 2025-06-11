@@ -4,12 +4,11 @@ import fitz  # PyMuPDF
 import plotly.express as px
 
 st.set_page_config(
-    page_title="Analyse de Relevé Bancaire",
+    page_title="Analyse de Relevé Bancaire Carte",
     page_icon="💳",
     layout="wide"
 )
 
-# --- CSS moderne pour titres et métriques ---
 st.markdown("""
     <style>
     .big-metric { font-size: 2rem; font-weight: 700; }
@@ -17,15 +16,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER ---
-st.markdown("<h1 style='margin-bottom:0;'>Analyse automatique de votre relevé bancaire</h1>", unsafe_allow_html=True)
-st.markdown("<div class='sub'>Importez un relevé PDF pour visualiser vos transactions, dépenses par catégorie et suivre votre solde.</div>", unsafe_allow_html=True)
+st.markdown("<h1 style='margin-bottom:0;'>Analyse de vos dépenses carte bancaire</h1>", unsafe_allow_html=True)
+st.markdown("<div class='sub'>Importez un relevé PDF : seules les transactions par carte seront analysées.</div>", unsafe_allow_html=True)
 
 # --- UPLOAD ---
 with st.sidebar:
     st.header("🗂 Import du relevé")
     uploaded_file = st.file_uploader("Choisissez un relevé de compte (PDF)", type=["pdf"])
-    st.info("L'analyse fonctionne sur la plupart des relevés PDF français classiques.")
+    st.info("Seules les transactions dont le Type est 'Transaction par carte' seront conservées.")
 
 @st.cache_data(show_spinner=False)
 def parse_pdf(file_bytes):
@@ -125,25 +123,6 @@ def parse_pdf(file_bytes):
     df = pd.DataFrame(transactions)
     return df, None
 
-def classify_transaction(type_text, desc_text, amount):
-    text = f"{type_text} {desc_text}".lower()
-    categ = "Autre"
-    if any(word in text for word in ["restaur", "pizza", "caf", "bar", "supermarch", "carrefour", "intermarch", "u express"]):
-        categ = "Alimentation"
-    elif any(word in text for word in ["station", "essence", "fuel", "gaz", "carburant", "engen", "total", "avia", "bus", "transport", "uber", "taxi"]):
-        categ = "Transport"
-    elif any(word in text for word in ["cin", "cinema", "netflix", "spotify", "loisir", "loisirs", "jeu", "steam", "concert", "voyage", "vacance"]):
-        categ = "Loisirs"
-    elif any(word in text for word in ["exécution d'ordre", "savings plan", "achat", "etf", "bourse", "invest"]):
-        categ = "Investissement"
-    elif any(word in text for word in ["virement", "transf", "transfer"]):
-        categ = "Transfert"
-    elif amount > 0 and any(word in text for word in ["intérêt", "interest", "remboursement", "salaire", "revenu", "crédit"]):
-        categ = "Revenu"
-    elif amount > 0 and categ == "Autre":
-        categ = "Revenu"
-    return categ
-
 # ----------- MAIN APP UI ----------------
 
 if uploaded_file:
@@ -157,12 +136,18 @@ if uploaded_file:
     if not pd.api.types.is_datetime64_any_dtype(df["Date"]):
         df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
     df = df.dropna(subset=["Date"])
-    df["Catégorie"] = df.apply(lambda row: classify_transaction(row["Type"], row["Description"], row["Montant"]), axis=1)
+
+    # --- FILTRAGE : Transactions par carte uniquement ---
+    df = df[df["Type"].str.strip() == "Transaction par carte"].copy()
+    if df.empty:
+        st.warning("Aucune transaction par carte trouvée sur ce relevé.")
+        st.stop()
+
     df = df.sort_values(by="Date").reset_index(drop=True)
 
-    # ------ Filtres classiques ------
+    # ------ Filtres classiques (date, recherche description) ------
     st.sidebar.markdown("---")
-    st.sidebar.subheader("Filtres rapides")
+    st.sidebar.subheader("Filtres")
     min_date, max_date = df["Date"].min(), df["Date"].max()
     date_range = st.sidebar.date_input(
         "Période",
@@ -170,14 +155,11 @@ if uploaded_file:
         min_value=min_date,
         max_value=max_date
     )
-    categories = sorted(df["Catégorie"].unique())
-    selected_cats = st.sidebar.multiselect("Catégories", categories, default=categories)
     search_txt = st.sidebar.text_input("Recherche dans description", "")
 
     mask = (
         (df["Date"] >= pd.to_datetime(date_range[0])) &
         (df["Date"] <= pd.to_datetime(date_range[1])) &
-        (df["Catégorie"].isin(selected_cats)) &
         (df["Description"].str.lower().str.contains(search_txt.lower()))
     )
     df_filtered = df[mask].copy().reset_index(drop=True)
@@ -189,62 +171,62 @@ if uploaded_file:
 
     # ----- 1. Aperçu général -----
     with tab1:
-        st.subheader("Synthèse de la période")
-        col1, col2, col3 = st.columns(3)
+        st.subheader("Synthèse dépenses carte (période filtrée)")
         total_dep = df_filtered[df_filtered["Montant"] < 0]["Montant"].sum()
-        total_rev = df_filtered[df_filtered["Montant"] > 0]["Montant"].sum()
         solde_fin = (
             df_filtered["Solde"].dropna().iloc[-1]
             if df_filtered["Solde"].notna().any()
             else df_filtered["Montant"].cumsum().iloc[-1]
         )
+        col1, col2 = st.columns(2)
         with col1:
-            st.metric("Total dépenses", f"{abs(total_dep):,.2f} €", delta=None)
+            st.metric("Total dépenses carte", f"{abs(total_dep):,.2f} €", delta=None)
         with col2:
-            st.metric("Total revenus", f"{total_rev:,.2f} €", delta=None)
-        with col3:
-            st.metric("Solde final", f"{solde_fin:,.2f} €", delta=None)
+            st.metric("Solde final (filtré)", f"{solde_fin:,.2f} €", delta=None)
 
-        # Résumé par catégorie (tableau compact)
-        st.markdown("**Dépenses par catégorie**")
+        # Dépenses par description (tableau compact)
+        st.markdown("**Dépenses par carte (par description)**")
         resume = (
             df_filtered[df_filtered["Montant"] < 0]
-            .groupby("Catégorie")["Montant"]
+            .groupby("Description")["Montant"]
             .sum()
             .abs()
             .sort_values(ascending=False)
             .reset_index()
         )
-        st.dataframe(resume, use_container_width=True, height=180)
+        st.dataframe(resume, use_container_width=True, height=200)
 
     # ----- 2. Transactions -----
     with tab2:
-        st.subheader("Liste détaillée des transactions filtrées")
-        st.caption("Vous pouvez trier les colonnes et faire défiler le tableau.")
+        st.subheader("Liste des transactions carte filtrées")
+        depenses_par_carte = df_filtered[df_filtered["Montant"] < 0].copy()
+        depenses_par_carte = depenses_par_carte.sort_values("Date")
+        total_depenses_carte = abs(depenses_par_carte["Montant"].sum())
+        st.markdown(f"**Total des dépenses par carte : {total_depenses_carte:,.2f} €**")
         st.dataframe(
-            df_filtered[["Date", "Type", "Description", "Montant", "Solde", "Catégorie"]],
+            depenses_par_carte[["Date", "Description", "Montant"]],
             use_container_width=True,
-            height=430
+            height=460
         )
 
     # ----- 3. Visualisations -----
     with tab3:
-        st.subheader("Répartition des dépenses par catégorie")
+        st.subheader("Répartition des dépenses par description (carte bancaire)")
         depenses = df_filtered[df_filtered["Montant"] < 0].copy()
         if depenses.empty:
-            st.warning("Aucune dépense détectée sur la période.")
+            st.warning("Aucune dépense par carte détectée sur la période.")
         else:
             fig = px.pie(
                 depenses,
-                names="Catégorie",
+                names="Description",
                 values=abs(depenses["Montant"]),
-                title="Dépenses par catégorie",
+                title="Dépenses carte par description",
                 hole=0.4
             )
-            fig.update_traces(textinfo="percent+label", pull=[0.05]*len(depenses["Catégorie"].unique()))
+            fig.update_traces(textinfo="percent+label", pull=[0.05]*len(depenses["Description"].unique()))
             st.plotly_chart(fig, use_container_width=True)
 
-        st.subheader("Évolution du solde du compte")
+        st.subheader("Évolution du solde du compte (carte uniquement)")
         df_solde = df_filtered.copy()
         df_solde = df_solde.sort_values("Date").dropna(subset=["Solde"])
         if not df_solde.empty:
@@ -263,4 +245,4 @@ if uploaded_file:
     )
 
 else:
-    st.info("Veuillez importer un relevé bancaire au format PDF pour démarrer l’analyse.")
+    st.info("Veuillez importer un relevé bancaire PDF pour démarrer l’analyse.")
