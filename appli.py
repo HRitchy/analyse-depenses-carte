@@ -191,7 +191,6 @@ if uploaded_file:
 
     # ----- 1. Aperçu général -----
     with tab1:
-        st.subheader("Synthèse dépenses carte (période filtrée)")
 
         if df_filtered.empty:
             st.warning("Aucune transaction ne correspond aux filtres sélectionnés.")
