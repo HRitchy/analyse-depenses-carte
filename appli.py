@@ -225,11 +225,17 @@ if uploaded_file:
             depenses_par_carte["Date"] = depenses_par_carte["Date"].dt.strftime("%Y-%m-%d")
         total_depenses_carte = abs(depenses_par_carte["Montant"].sum())
         st.markdown(f"**Total des dépenses par carte : {total_depenses_carte:,.2f} €**")
-        st.dataframe(
-            depenses_par_carte[["Date", "Description", "Montant"]],
-            use_container_width=True,
-            height=460
+        # Style montant column: red for negatives, green for positives
+        def color_montant(val):
+            color = "red" if val < 0 else "green"
+            return f"color: {color}"
+
+        styled_df = (
+            depenses_par_carte[["Date", "Description", "Montant"]]
+            .style.applymap(color_montant, subset=["Montant"])
+            .format({"Montant": "{:+,.2f} €"})
         )
+        st.dataframe(styled_df, use_container_width=True, height=460)
 
     # ----- 3. Visualisations -----
     with tab3:
