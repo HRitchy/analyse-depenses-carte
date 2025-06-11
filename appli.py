@@ -222,7 +222,7 @@ if uploaded_file:
         depenses_par_carte = depenses_par_carte.sort_values("Date")
         # Format de la date sans l'heure pour l'affichage
         if pd.api.types.is_datetime64_any_dtype(depenses_par_carte["Date"]):
-            depenses_par_carte["Date"] = depenses_par_carte["Date"].dt.strftime("%Y-%m-%d")
+            depenses_par_carte["Date"] = depenses_par_carte["Date"].dt.strftime("%d/%m/%Y")
         total_depenses_carte = abs(depenses_par_carte["Montant"].sum())
         st.markdown(f"**Total des dépenses par carte : {total_depenses_carte:,.2f} €**")
         # Style montant column: red for negatives, green for positives
