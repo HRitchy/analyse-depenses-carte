@@ -213,6 +213,7 @@ if uploaded_file:
             .sort_values(ascending=False)
             .reset_index()
         )
+        resume.index += 1
         st.dataframe(resume, use_container_width=True, height=200)
 
     # ----- 2. Transactions -----
