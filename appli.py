@@ -33,7 +33,7 @@ st.markdown(
 # --- UPLOAD ---
 with st.sidebar:
     st.header("🗂 Import du relevé")
-    st.info("Seules les transactions dont le Type est 'Transaction par carte' seront conservées.")
+    st.info("Seules les transactions dont le type contient 'carte' seront conservées.")
 
 st.markdown("<div class='step-title'>1️⃣ Importez un relevé PDF</div>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("Choisissez un relevé de compte (PDF)", type=["pdf"])
@@ -156,8 +156,8 @@ if uploaded_file:
         df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
     df = df.dropna(subset=["Date"])
 
-    # --- FILTRAGE : Transactions par carte uniquement ---
-    df = df[df["Type"].str.strip() == "Transaction par carte"].copy()
+    # --- FILTRAGE : Transactions carte ---
+    df = df[df["Type"].str.contains("carte", case=False, na=False)].copy()
     if df.empty:
         st.warning("Aucune transaction par carte trouvée sur ce relevé.")
         st.stop()
