@@ -229,14 +229,24 @@ if uploaded_file:
         if depenses.empty:
             st.warning("Aucune dépense par carte détectée sur la période.")
         else:
-            fig = px.pie(
-                depenses,
-                names="Description",
-                values=abs(depenses["Montant"]),
-                title="Dépenses carte par description",
-                hole=0.4
+            agg = (
+                depenses
+                .groupby("Description")["Montant"]
+                .sum()
+                .abs()
+                .sort_values(ascending=False)
+                .reset_index()
             )
-            fig.update_traces(textinfo="percent+label", pull=[0.05]*len(depenses["Description"].unique()))
+            agg["Pourcentage"] = agg["Montant"] / agg["Montant"].sum() * 100
+            fig = px.bar(
+                agg,
+                x="Pourcentage",
+                y="Description",
+                orientation="h",
+                text=agg["Pourcentage"].map(lambda x: f"{x:.1f}%"),
+                title="Dépenses carte par description",
+            )
+            fig.update_layout(yaxis={"categoryorder": "total ascending"})
             st.plotly_chart(fig, use_container_width=True)
 
         st.subheader("Évolution du solde du compte (carte uniquement)")
