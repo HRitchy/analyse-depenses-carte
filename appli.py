@@ -219,8 +219,18 @@ if uploaded_file:
             .sort_values(ascending=False)
             .reset_index()
         )
+
+        # Ajout d'une colonne indiquant la part de chaque description
+        total_depenses = resume["Montant"].sum()
+        if total_depenses != 0:
+            resume["Pourcentage"] = (resume["Montant"] / total_depenses * 100).round(1)
+
         resume.index += 1
-        st.dataframe(resume, use_container_width=True, height=200)
+        st.dataframe(
+            resume,
+            use_container_width=True,
+            height=200,
+        )
 
     # ----- 2. Transactions -----
     with tab2:
