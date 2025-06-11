@@ -184,9 +184,10 @@ if uploaded_file:
     df_filtered = df[mask].copy().reset_index(drop=True)
 
     # --------- Onglets principaux ---------
-    tab1, tab2, tab3 = st.tabs(
-        ["🏠 Aperçu général", "💳 Transactions", "📊 Visualisations"]
-    )
+    tab1, tab2 = st.tabs([
+        "🏠 Aperçu général",
+        "💳 Transactions",
+    ])
 
     # ----- 1. Aperçu général -----
     with tab1:
@@ -239,45 +240,6 @@ if uploaded_file:
         )
         st.dataframe(styled_df, use_container_width=True, height=460)
 
-    # ----- 3. Visualisations -----
-    with tab3:
-        st.subheader("Répartition des dépenses par description (carte bancaire)")
-        depenses = df_filtered[df_filtered["Montant"] < 0].copy()
-        if depenses.empty:
-            st.warning("Aucune dépense par carte détectée sur la période.")
-        else:
-            agg = (
-                depenses
-                .groupby("Description")["Montant"]
-                .sum()
-                .abs()
-                .sort_values(ascending=False)
-                .reset_index()
-            )
-            agg["Pourcentage"] = agg["Montant"] / agg["Montant"].sum() * 100
-            fig = px.bar(
-                agg,
-                x="Pourcentage",
-                y="Description",
-                orientation="h",
-                text=agg["Pourcentage"].map(lambda x: f"{x:.1f}%"),
-                title="Dépenses carte par description",
-            )
-            fig.update_layout(yaxis={"categoryorder": "total ascending"})
-            st.plotly_chart(fig, use_container_width=True)
-
-        st.subheader("Évolution du solde du compte (carte uniquement)")
-        df_solde = df_filtered.copy()
-        df_solde = df_solde.sort_values("Date").dropna(subset=["Solde"])
-        if not df_solde.empty:
-            fig2 = px.line(
-                df_solde, x="Date", y="Solde", markers=True,
-                title="Solde du compte (€)",
-                template="plotly_white"
-            )
-            st.plotly_chart(fig2, use_container_width=True)
-        else:
-            st.info("Solde non disponible sur ce relevé.")
 
     st.markdown(
         "<div style='text-align:right;font-size:0.95rem;color:#888;'>Thème clair/sombre auto selon vos préférences système (voir Paramètres Streamlit).</div>",
