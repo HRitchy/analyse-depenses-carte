@@ -230,6 +230,8 @@ if uploaded_file:
             color = "red" if val < 0 else "green"
             return f"color: {color}"
 
+        depenses_par_carte = depenses_par_carte.reset_index(drop=True)
+        depenses_par_carte.index += 1
         styled_df = (
             depenses_par_carte[["Date", "Description", "Montant"]]
             .style.applymap(color_montant, subset=["Montant"])
