@@ -184,9 +184,10 @@ if uploaded_file:
     df_filtered = df[mask].copy().reset_index(drop=True)
 
     # --------- Onglets principaux ---------
-    tab1, tab2 = st.tabs([
+    tab1, tab2, tab3 = st.tabs([
         "🏠 Aperçu général",
         "💳 Transactions",
+        "📊 Visualisation",
     ])
 
     # ----- 1. Aperçu général -----
@@ -248,6 +249,28 @@ if uploaded_file:
             .format({"Montant": "{:+,.2f} €"})
         )
         st.dataframe(styled_df, use_container_width=True, height=460)
+
+    # ----- 3. Visualisation -----
+    with tab3:
+        if df_filtered.empty:
+            st.warning("Aucune transaction ne correspond aux filtres sélectionnés.")
+        else:
+            evolution = (
+                df_filtered[df_filtered["Montant"] < 0]
+                .groupby(df_filtered["Date"].dt.date)["Montant"]
+                .sum()
+                .abs()
+                .reset_index()
+            )
+            fig = px.line(
+                evolution,
+                x="Date",
+                y="Montant",
+                markers=True,
+                title="Évolution des dépenses dans le temps",
+            )
+            fig.update_layout(xaxis_title="Date", yaxis_title="Montant (€)")
+            st.plotly_chart(fig, use_container_width=True)
 
 else:
     st.info("Importez un relevé bancaire PDF pour démarrer l’analyse (étape 1).")
