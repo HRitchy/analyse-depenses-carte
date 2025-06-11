@@ -183,6 +183,11 @@ if uploaded_file:
     )
     df_filtered = df[mask].copy().reset_index(drop=True)
 
+    # Common style helper for Montant columns
+    def color_montant(val):
+        color = "red" if val < 0 else "green"
+        return f"color: {color}"
+
     # --------- Onglets principaux ---------
     tab1, tab2, tab3 = st.tabs(
         ["🏠 Aperçu général", "💳 Transactions", "📊 Visualisations"]
@@ -218,7 +223,12 @@ if uploaded_file:
             .sort_values(ascending=False)
             .reset_index()
         )
-        st.dataframe(resume, use_container_width=True, height=200)
+
+        styled_resume = (
+            resume.style.applymap(color_montant, subset=["Montant"])
+            .format({"Montant": "{:+,.2f} €"})
+        )
+        st.dataframe(styled_resume, use_container_width=True, height=200)
 
     # ----- 2. Transactions -----
     with tab2:
@@ -231,10 +241,6 @@ if uploaded_file:
         total_depenses_carte = abs(depenses_par_carte["Montant"].sum())
         st.markdown(f"**Total des dépenses par carte : {total_depenses_carte:,.2f} €**")
         # Style montant column: red for negatives, green for positives
-        def color_montant(val):
-            color = "red" if val < 0 else "green"
-            return f"color: {color}"
-
         depenses_par_carte = depenses_par_carte.reset_index(drop=True)
         depenses_par_carte.index += 1
         styled_df = (
