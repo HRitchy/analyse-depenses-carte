@@ -197,16 +197,7 @@ if uploaded_file:
             st.stop()
 
         total_dep = df_filtered[df_filtered["Montant"] < 0]["Montant"].sum()
-        solde_fin = (
-            df_filtered["Solde"].dropna().iloc[-1]
-            if df_filtered["Solde"].notna().any()
-            else df_filtered["Montant"].cumsum().iloc[-1]
-        )
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Total dépenses carte", f"{abs(total_dep):,.2f} €", delta=None)
-        with col2:
-            st.metric("Solde final (filtré)", f"{solde_fin:,.2f} €", delta=None)
+        st.metric("Total dépenses carte", f"{abs(total_dep):,.2f} €", delta=None)
 
         # Dépenses par description (tableau compact)
         st.markdown("**Dépenses par carte (par description)**")
