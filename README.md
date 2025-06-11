@@ -25,8 +25,8 @@ The application automatically filters transactions whose type contains the word
 
 ## Visualisation des dépenses
 
-Un onglet **Visualisation** affiche l'évolution des dépenses par carte dans le temps
-à l'aide d'un graphique interactif.
+Un onglet **Visualisation** affiche l'évolution **cumulée** des dépenses par carte
+dans le temps à l'aide d'un graphique interactif.
 
 ## Deploy on share.streamlit.io
 
