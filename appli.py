@@ -32,8 +32,10 @@ with st.sidebar:
 st.markdown("<div class='step-title'>1️⃣ Importez un relevé PDF</div>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("Choisissez un relevé de compte (PDF)", type=["pdf"])
 
+# ----------- PARSE PDF (version corrigée) ----------------
+
 @st.cache_data(show_spinner=False)
-def parse_pdf(file_bytes, progress_cb=None):
+def parse_pdf(file_bytes):
     try:
         pdf_doc = fitz.open(stream=file_bytes, filetype="pdf")
     except Exception as e:
@@ -41,8 +43,6 @@ def parse_pdf(file_bytes, progress_cb=None):
     transactions = []
     total_pages = pdf_doc.page_count
     for page_index in range(total_pages):
-        if progress_cb:
-            progress_cb(page_index / total_pages)
         page = pdf_doc.load_page(page_index)
         words = page.get_text("words")
         day_indices = []
@@ -130,8 +130,6 @@ def parse_pdf(file_bytes, progress_cb=None):
                 "Montant": amount_val,
                 "Solde": balance_val
             })
-    if progress_cb:
-        progress_cb(1.0)
     df = pd.DataFrame(transactions)
     return df, None
 
@@ -141,7 +139,7 @@ if uploaded_file:
     progress_bar = st.progress(0)
     with st.spinner("Analyse en cours..."):
         file_bytes = uploaded_file.read()
-        df, err = parse_pdf(file_bytes, progress_bar.progress)
+        df, err = parse_pdf(file_bytes)
     progress_bar.empty()
     st.markdown("<div class='step-title'>2️⃣ Résultats de l'analyse</div>", unsafe_allow_html=True)
     if err or df is None or df.empty:
