@@ -216,8 +216,12 @@ if uploaded_file:
             resume["Pourcentage"] = (resume["Montant"] / total_depenses * 100).round(1)
 
         resume.index += 1
+        format_dict = {"Montant": "{:,.2f} €"}
+        if "Pourcentage" in resume.columns:
+            format_dict["Pourcentage"] = "{:.1f}%"
+        formatted_resume = resume.style.format(format_dict)
         st.dataframe(
-            resume,
+            formatted_resume,
             use_container_width=True,
             height=200,
         )
