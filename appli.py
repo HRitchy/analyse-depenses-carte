@@ -6,33 +6,43 @@ import plotly.express as px
 st.set_page_config(
     page_title="Analyse de Relevé Bancaire Carte",
     page_icon="💳",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 st.markdown("""
     <style>
     .big-metric { font-size: 2rem; font-weight: 700; }
     .sub { color: #888; font-size: 1rem; }
+    .step-title { font-size: 1.1rem; font-weight: 600; margin-top:1rem; }
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown("<h1 style='margin-bottom:0;'>Analyse de vos dépenses carte bancaire</h1>", unsafe_allow_html=True)
-st.markdown("<div class='sub'>Importez un relevé PDF : seules les transactions par carte seront analysées.</div>", unsafe_allow_html=True)
+st.markdown(
+    "<div class='sub'>Suivez vos dépenses en quelques étapes : importez un PDF puis explorez les résultats.</div>",
+    unsafe_allow_html=True,
+)
 
 # --- UPLOAD ---
 with st.sidebar:
     st.header("🗂 Import du relevé")
-    uploaded_file = st.file_uploader("Choisissez un relevé de compte (PDF)", type=["pdf"])
     st.info("Seules les transactions dont le Type est 'Transaction par carte' seront conservées.")
 
+st.markdown("<div class='step-title'>1️⃣ Importez un relevé PDF</div>", unsafe_allow_html=True)
+uploaded_file = st.file_uploader("Choisissez un relevé de compte (PDF)", type=["pdf"])
+
 @st.cache_data(show_spinner=False)
-def parse_pdf(file_bytes):
+def parse_pdf(file_bytes, progress_cb=None):
     try:
         pdf_doc = fitz.open(stream=file_bytes, filetype="pdf")
     except Exception as e:
         return None, f"Erreur lors de la lecture du PDF: {e}"
     transactions = []
-    for page_index in range(pdf_doc.page_count):
+    total_pages = pdf_doc.page_count
+    for page_index in range(total_pages):
+        if progress_cb:
+            progress_cb(page_index / total_pages)
         page = pdf_doc.load_page(page_index)
         words = page.get_text("words")
         day_indices = []
@@ -120,15 +130,20 @@ def parse_pdf(file_bytes):
                 "Montant": amount_val,
                 "Solde": balance_val
             })
+    if progress_cb:
+        progress_cb(1.0)
     df = pd.DataFrame(transactions)
     return df, None
 
 # ----------- MAIN APP UI ----------------
 
 if uploaded_file:
+    progress_bar = st.progress(0)
     with st.spinner("Analyse en cours..."):
         file_bytes = uploaded_file.read()
-        df, err = parse_pdf(file_bytes)
+        df, err = parse_pdf(file_bytes, progress_bar.progress)
+    progress_bar.empty()
+    st.markdown("<div class='step-title'>2️⃣ Résultats de l'analyse</div>", unsafe_allow_html=True)
     if err or df is None or df.empty:
         st.error(err or "Aucune transaction trouvée. Format PDF non supporté.")
         st.stop()
@@ -245,4 +260,4 @@ if uploaded_file:
     )
 
 else:
-    st.info("Veuillez importer un relevé bancaire PDF pour démarrer l’analyse.")
+    st.info("Importez un relevé bancaire PDF pour démarrer l’analyse (étape 1).")
