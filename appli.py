@@ -191,6 +191,11 @@ if uploaded_file:
     # ----- 1. Aperçu général -----
     with tab1:
         st.subheader("Synthèse dépenses carte (période filtrée)")
+
+        if df_filtered.empty:
+            st.warning("Aucune transaction ne correspond aux filtres sélectionnés.")
+            st.stop()
+
         total_dep = df_filtered[df_filtered["Montant"] < 0]["Montant"].sum()
         solde_fin = (
             df_filtered["Solde"].dropna().iloc[-1]
