@@ -6,8 +6,8 @@ import plotly.express as px
 st.set_page_config(
     page_title="Analyse de Relevé Bancaire Carte",
     page_icon="💳",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -15,6 +15,12 @@ st.markdown("""
     .big-metric { font-size: 2rem; font-weight: 700; }
     .sub { color: #888; font-size: 1rem; }
     .step-title { font-size: 1.1rem; font-weight: 600; margin-top:1rem; }
+    @media (max-width: 600px) {
+        .big-metric { font-size: 1.5rem; }
+        .sub { font-size: 0.9rem; }
+        .step-title { font-size: 1rem; }
+        h1 { font-size: 1.4rem !important; }
+    }
     </style>
 """, unsafe_allow_html=True)
 
