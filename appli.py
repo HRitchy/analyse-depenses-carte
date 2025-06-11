@@ -262,14 +262,15 @@ if uploaded_file:
                 .abs()
                 .reset_index()
             )
+            evolution["Montant cumulé"] = evolution["Montant"].cumsum()
             fig = px.line(
                 evolution,
                 x="Date",
-                y="Montant",
+                y="Montant cumulé",
                 markers=True,
-                title="Évolution des dépenses dans le temps",
+                title="Évolution cumulée des dépenses dans le temps",
             )
-            fig.update_layout(xaxis_title="Date", yaxis_title="Montant (€)")
+            fig.update_layout(xaxis_title="Date", yaxis_title="Montant cumulé (€)")
             st.plotly_chart(fig, use_container_width=True)
 
 else:
