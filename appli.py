@@ -3,6 +3,16 @@ import pandas as pd
 import fitz  # PyMuPDF
 import plotly.express as px
 
+
+def format_eur(amount: float) -> str:
+    """Return the amount formatted in French style with the Euro symbol."""
+    return f"{amount:,.2f}".replace(",", " ").replace(".", ",") + " €"
+
+
+def format_eur_signed(amount: float) -> str:
+    """Return the amount formatted with sign in French style and Euro."""
+    return f"{amount:+,.2f}".replace(",", " ").replace(".", ",") + " €"
+
 st.set_page_config(
     page_title="Analyse de Relevé Bancaire Carte",
     page_icon="💳",
@@ -205,9 +215,9 @@ if uploaded_file:
         )
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Total dépenses carte", f"{abs(total_dep):,.2f} €", delta=None)
+            st.metric("Total dépenses carte", format_eur(abs(total_dep)), delta=None)
         with col2:
-            st.metric("Solde final (filtré)", f"{solde_fin:,.2f} €", delta=None)
+            st.metric("Solde final (filtré)", format_eur(solde_fin), delta=None)
 
         # Dépenses par description (tableau compact)
         st.markdown("**Dépenses par carte (par description)**")
@@ -220,7 +230,8 @@ if uploaded_file:
             .reset_index()
         )
         resume.index += 1
-        st.dataframe(resume, use_container_width=True, height=200)
+        styled_resume = resume.style.format({"Montant": format_eur})
+        st.dataframe(styled_resume, use_container_width=True, height=200)
 
     # ----- 2. Transactions -----
     with tab2:
@@ -242,7 +253,7 @@ if uploaded_file:
         styled_df = (
             depenses_par_carte[["Date", "Description", "Montant"]]
             .style.applymap(color_montant, subset=["Montant"])
-            .format({"Montant": "{:+,.2f} €"})
+            .format({"Montant": format_eur_signed})
         )
         st.dataframe(styled_df, use_container_width=True, height=460)
 
