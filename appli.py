@@ -224,7 +224,6 @@ if uploaded_file:
 
     # ----- 2. Transactions -----
     with tab2:
-        st.subheader("Liste des transactions carte filtrées")
         depenses_par_carte = df_filtered[df_filtered["Montant"] < 0].copy()
         depenses_par_carte = depenses_par_carte.sort_values("Date")
         # Format de la date sans l'heure pour l'affichage
