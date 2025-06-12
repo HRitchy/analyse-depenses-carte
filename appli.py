@@ -200,8 +200,8 @@ if uploaded_file:
         total_dep = df_filtered[df_filtered["Montant"] < 0]["Montant"].sum()
         st.metric("Total dépenses carte", f"{abs(total_dep):,.2f} €", delta=None)
 
-        # Dépenses par description (tableau compact)
-        st.markdown("**Dépenses par carte (par description)**")
+        # Dépenses par carte (tableau compact)
+        st.markdown("**Dépenses par carte**")
         resume = (
             df_filtered[df_filtered["Montant"] < 0]
             .groupby("Description")["Montant"]
