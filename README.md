@@ -28,12 +28,6 @@ The application automatically filters transactions whose type contains the word
 Un onglet **Visualisation** affiche l'évolution **cumulée** des dépenses par carte
 dans le temps à l'aide d'un graphique interactif.
 
-## Copier facilement les descriptions
-
-Dans l'onglet **Transactions**, un champ permet de sélectionner une ligne et
-d'afficher sa description avec un bouton de copie intégré. Vous pouvez ainsi
-copier le texte sans risque d'erreur.
-
 ## Deploy on share.streamlit.io
 
 On share.streamlit.io, create a new deployment and set **appli.py** as the entry point. The platform will read `requirements.txt` to install the dependencies automatically.
