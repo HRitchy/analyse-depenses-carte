@@ -209,8 +209,13 @@ if uploaded_file:
         )
         resume["Montant"] = resume["sum"].abs()
         resume["Nombre de transactions"] = resume["size"].astype(int)
-        resume["Montant moyen par transaction"] = (
-            resume["Montant"] / resume["Nombre de transactions"]
+        resume["Montant moyen par transaction"] = resume.apply(
+            lambda r: (
+                r["Montant"] / r["Nombre de transactions"]
+                if r["Nombre de transactions"] > 1
+                else None
+            ),
+            axis=1,
         )
         resume = (
             resume[
@@ -233,7 +238,7 @@ if uploaded_file:
         format_dict = {
             "Montant": "{:,.2f} €",
             "Nombre de transactions": "{:d}",
-            "Montant moyen par transaction": "{:,.2f} €",
+            "Montant moyen par transaction": lambda x: "" if pd.isna(x) else f"{x:,.2f} €",
         }
         if "Pourcentage" in resume.columns:
             format_dict["Pourcentage"] = "{:.1f}%"
