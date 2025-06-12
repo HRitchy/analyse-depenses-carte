@@ -1,6 +1,7 @@
 # test2
 
-This repository contains a Streamlit application.
+This repository contains a Streamlit application. It now expects bank statements
+in the ODG (OpenDocument Graphics) format rather than PDF.
 
 ## Requirements
 

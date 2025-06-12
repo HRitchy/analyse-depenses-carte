@@ -26,7 +26,7 @@ st.markdown("""
 
 st.markdown("<h1 style='margin-bottom:0;'>Analyse de vos dépenses carte bancaire</h1>", unsafe_allow_html=True)
 st.markdown(
-    "<div class='sub'>Suivez vos dépenses en quelques étapes : importez un PDF puis explorez les résultats.</div>",
+    "<div class='sub'>Suivez vos dépenses en quelques étapes : importez un fichier ODG puis explorez les résultats.</div>",
     unsafe_allow_html=True,
 )
 
@@ -35,21 +35,21 @@ with st.sidebar:
     st.header("🗂 Import du relevé")
     st.info("Seules les transactions dont le type contient 'carte' seront conservées.")
 
-st.markdown("<div class='step-title'>1️⃣ Importez un relevé PDF</div>", unsafe_allow_html=True)
-uploaded_file = st.file_uploader("Choisissez un relevé de compte (PDF)", type=["pdf"])
+st.markdown("<div class='step-title'>1️⃣ Importez un relevé ODG</div>", unsafe_allow_html=True)
+uploaded_file = st.file_uploader("Choisissez un relevé de compte (ODG)", type=["odg"])
 
-# ----------- PARSE PDF (version corrigée) ----------------
+# ----------- PARSE ODG (version corrigée) ----------------
 
 @st.cache_data(show_spinner=False)
-def parse_pdf(file_bytes):
+def parse_odg(file_bytes):
     try:
-        pdf_doc = fitz.open(stream=file_bytes, filetype="pdf")
+        doc = fitz.open(stream=file_bytes, filetype="odg")
     except Exception as e:
-        return None, f"Erreur lors de la lecture du PDF: {e}"
+        return None, f"Erreur lors de la lecture du fichier ODG: {e}"
     transactions = []
-    total_pages = pdf_doc.page_count
+    total_pages = doc.page_count
     for page_index in range(total_pages):
-        page = pdf_doc.load_page(page_index)
+        page = doc.load_page(page_index)
         words = page.get_text("words")
         day_indices = []
         for i, w in enumerate(words):
@@ -145,11 +145,11 @@ if uploaded_file:
     progress_bar = st.progress(0)
     with st.spinner("Analyse en cours..."):
         file_bytes = uploaded_file.read()
-        df, err = parse_pdf(file_bytes)
+        df, err = parse_odg(file_bytes)
     progress_bar.empty()
     st.markdown("<div class='step-title'>2️⃣ Résultats de l'analyse</div>", unsafe_allow_html=True)
     if err or df is None or df.empty:
-        st.error(err or "Aucune transaction trouvée. Format PDF non supporté.")
+        st.error(err or "Aucune transaction trouvée. Format ODG non supporté.")
         st.stop()
     # Format dates
     if not pd.api.types.is_datetime64_any_dtype(df["Date"]):
@@ -319,4 +319,4 @@ if uploaded_file:
             st.plotly_chart(fig, use_container_width=True)
 
 else:
-    st.info("Importez un relevé bancaire PDF pour démarrer l’analyse (étape 1).")
+    st.info("Importez un relevé bancaire ODG pour démarrer l’analyse (étape 1).")
