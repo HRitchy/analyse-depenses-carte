@@ -209,8 +209,20 @@ if uploaded_file:
         )
         resume["Montant"] = resume["sum"].abs()
         resume["Nombre de transactions"] = resume["size"].astype(int)
+        resume["Montant moyen par transaction"] = resume.apply(
+            lambda r: r["Montant"] / r["Nombre de transactions"]
+            if r["Nombre de transactions"] > 1
+            else None,
+            axis=1,
+        )
         resume = (
-            resume[["Montant", "Nombre de transactions"]]
+            resume[
+                [
+                    "Montant",
+                    "Nombre de transactions",
+                    "Montant moyen par transaction",
+                ]
+            ]
             .sort_values("Montant", ascending=False)
             .reset_index()
         )
@@ -223,11 +235,12 @@ if uploaded_file:
         resume.index += 1
         format_dict = {
             "Montant": "{:,.2f} €",
-            "Nombre de transactions": "{:d}"
+            "Nombre de transactions": "{:d}",
+            "Montant moyen par transaction": "{:,.2f} €",
         }
         if "Pourcentage" in resume.columns:
             format_dict["Pourcentage"] = "{:.1f}%"
-        formatted_resume = resume.style.format(format_dict)
+        formatted_resume = resume.style.format(format_dict, na_rep="")
         st.dataframe(
             formatted_resume,
             use_container_width=True,
