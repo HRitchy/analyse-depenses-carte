@@ -205,9 +205,13 @@ if uploaded_file:
         resume = (
             df_filtered[df_filtered["Montant"] < 0]
             .groupby("Description")["Montant"]
-            .sum()
-            .abs()
-            .sort_values(ascending=False)
+            .agg(["sum", "size"])
+        )
+        resume["Montant"] = resume["sum"].abs()
+        resume["Nombre de transactions"] = resume["size"].astype(int)
+        resume = (
+            resume[["Montant", "Nombre de transactions"]]
+            .sort_values("Montant", ascending=False)
             .reset_index()
         )
 
@@ -217,7 +221,10 @@ if uploaded_file:
             resume["Pourcentage"] = (resume["Montant"] / total_depenses * 100).round(1)
 
         resume.index += 1
-        format_dict = {"Montant": "{:,.2f} €"}
+        format_dict = {
+            "Montant": "{:,.2f} €",
+            "Nombre de transactions": "{:d}"
+        }
         if "Pourcentage" in resume.columns:
             format_dict["Pourcentage"] = "{:.1f}%"
         formatted_resume = resume.style.format(format_dict)
