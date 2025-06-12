@@ -263,7 +263,7 @@ if uploaded_file:
             st.subheader("Visualisation des dépenses")
             view_option = st.selectbox(
                 "Mode d'affichage",
-                ["Évolution cumulée", "Dépenses par jour", "Dépenses par mois"],
+                ["Évolution cumulée", "Dépenses par jour"],
             )
 
             base = df_filtered[df_filtered["Montant"] < 0].copy()
@@ -293,16 +293,6 @@ if uploaded_file:
                     title="Dépenses par jour",
                 )
                 fig.update_layout(xaxis_title="Date", yaxis_title="Montant (€)")
-            else:
-                base["Mois"] = base["Date"].dt.to_period("M").dt.to_timestamp()
-                monthly = base.groupby("Mois")["Montant"].sum().reset_index()
-                fig = px.bar(
-                    monthly,
-                    x="Mois",
-                    y="Montant",
-                    title="Dépenses par mois",
-                )
-                fig.update_layout(xaxis_title="Mois", yaxis_title="Montant (€)")
 
             st.plotly_chart(fig, use_container_width=True)
 
