@@ -255,18 +255,6 @@ if uploaded_file:
         )
         st.dataframe(styled_df, use_container_width=True, height=460)
 
-        if not depenses_par_carte.empty:
-            st.markdown("### Copier une description")
-            idx_to_copy = st.number_input(
-                "Sélectionnez la ligne de transaction pour copier la description",
-                min_value=1,
-                max_value=len(depenses_par_carte),
-                value=1,
-                step=1,
-            )
-            desc_to_copy = depenses_par_carte.loc[idx_to_copy - 1, "Description"]
-            st.code(desc_to_copy, language=None)
-
     # ----- 3. Visualisation -----
     with tab3:
         if df_filtered.empty:
