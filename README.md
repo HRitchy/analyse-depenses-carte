@@ -25,13 +25,12 @@ The application automatically filters transactions whose type contains the word
 
 ## Visualisation des dépenses
 
-L'onglet **Visualisation** propose désormais plusieurs modes :
+L'onglet **Visualisation** propose désormais deux modes :
 
 - **Évolution cumulée** des dépenses au fil du temps
 - **Dépenses par jour** pour voir les montants quotidiens
-- **Dépenses par mois** avec un total mensuel
 
-Un menu déroulant dans l'application permet de sélectionner la vue désirée.
+Un menu déroulant dans l'application permet de choisir la vue désirée.
 
 ## Deploy on share.streamlit.io
 
