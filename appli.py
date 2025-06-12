@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import fitz  # PyMuPDF
 import plotly.express as px
+import unicodedata
 
 st.set_page_config(
     page_title="Analyse de Relevé Bancaire Carte",
@@ -50,6 +51,12 @@ def parse_pdf(file_bytes):
     total_pages = pdf_doc.page_count
     for page_index in range(total_pages):
         page = pdf_doc.load_page(page_index)
+        page_text_norm = "".join(
+            c for c in unicodedata.normalize("NFKD", page.get_text())
+            if not unicodedata.combining(c)
+        ).upper()
+        if "APERCU DU SOLDE" in page_text_norm:
+            break
         words = page.get_text("words")
         day_indices = []
         for i, w in enumerate(words):
