@@ -25,8 +25,13 @@ The application automatically filters transactions whose type contains the word
 
 ## Visualisation des dépenses
 
-Un onglet **Visualisation** affiche l'évolution **cumulée** des dépenses par carte
-dans le temps à l'aide d'un graphique interactif.
+L'onglet **Visualisation** propose désormais plusieurs modes :
+
+- **Évolution cumulée** des dépenses au fil du temps
+- **Dépenses par jour** pour voir les montants quotidiens
+- **Dépenses par mois** avec un total mensuel
+
+Un menu déroulant dans l'application permet de sélectionner la vue désirée.
 
 ## Deploy on share.streamlit.io
 

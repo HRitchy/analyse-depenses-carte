@@ -260,22 +260,50 @@ if uploaded_file:
         if df_filtered.empty:
             st.warning("Aucune transaction ne correspond aux filtres sélectionnés.")
         else:
-            evolution = (
-                df_filtered[df_filtered["Montant"] < 0]
-                .groupby(df_filtered["Date"].dt.date)["Montant"]
-                .sum()
-                .abs()
-                .reset_index()
+            st.subheader("Visualisation des dépenses")
+            view_option = st.selectbox(
+                "Mode d'affichage",
+                ["Évolution cumulée", "Dépenses par jour", "Dépenses par mois"],
             )
-            evolution["Montant cumulé"] = evolution["Montant"].cumsum()
-            fig = px.line(
-                evolution,
-                x="Date",
-                y="Montant cumulé",
-                markers=True,
-                title="Évolution cumulée des dépenses dans le temps",
-            )
-            fig.update_layout(xaxis_title="Date", yaxis_title="Montant cumulé (€)")
+
+            base = df_filtered[df_filtered["Montant"] < 0].copy()
+            base["Montant"] = base["Montant"].abs()
+
+            if view_option == "Évolution cumulée":
+                daily = (
+                    base.groupby(base["Date"].dt.date)["Montant"].sum().reset_index()
+                )
+                daily["Montant cumulé"] = daily["Montant"].cumsum()
+                fig = px.line(
+                    daily,
+                    x="Date",
+                    y="Montant cumulé",
+                    markers=True,
+                    title="Évolution cumulée des dépenses",
+                )
+                fig.update_layout(xaxis_title="Date", yaxis_title="Montant cumulé (€)")
+            elif view_option == "Dépenses par jour":
+                daily = (
+                    base.groupby(base["Date"].dt.date)["Montant"].sum().reset_index()
+                )
+                fig = px.bar(
+                    daily,
+                    x="Date",
+                    y="Montant",
+                    title="Dépenses par jour",
+                )
+                fig.update_layout(xaxis_title="Date", yaxis_title="Montant (€)")
+            else:
+                base["Mois"] = base["Date"].dt.to_period("M").dt.to_timestamp()
+                monthly = base.groupby("Mois")["Montant"].sum().reset_index()
+                fig = px.bar(
+                    monthly,
+                    x="Mois",
+                    y="Montant",
+                    title="Dépenses par mois",
+                )
+                fig.update_layout(xaxis_title="Mois", yaxis_title="Montant (€)")
+
             st.plotly_chart(fig, use_container_width=True)
 
 else:
