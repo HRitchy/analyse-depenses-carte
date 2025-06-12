@@ -236,6 +236,11 @@ if uploaded_file:
             depenses_par_carte["Date"] = depenses_par_carte["Date"].dt.strftime("%d/%m/%Y")
         total_depenses_carte = abs(depenses_par_carte["Montant"].sum())
         st.markdown(f"**Total des dépenses par carte : {total_depenses_carte:,.2f} €**")
+        moyenne_journaliere = total_depenses_carte / 30.44
+        st.markdown(
+            f"<div class='sub'>Dépense moyenne quotidienne : {moyenne_journaliere:,.2f} €</div>",
+            unsafe_allow_html=True,
+        )
         # Style montant column: red for negatives, green for positives
         def color_montant(val):
             color = "red" if val < 0 else "green"
