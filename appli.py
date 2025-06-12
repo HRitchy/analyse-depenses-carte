@@ -47,6 +47,11 @@ def parse_pdf(file_bytes):
     except Exception as e:
         return None, f"Erreur lors de la lecture du PDF: {e}"
     transactions = []
+    ignored_keywords = [
+        "aperçu du solde",
+        "citibank",
+        "liquidity fund",
+    ]
     total_pages = pdf_doc.page_count
     for page_index in range(total_pages):
         page = pdf_doc.load_page(page_index)
@@ -64,6 +69,9 @@ def parse_pdf(file_bytes):
         for idx_pos, start_idx in enumerate(day_indices):
             end_idx = day_indices[idx_pos + 1] if idx_pos < len(day_indices) - 1 else len(words)
             trans_words = words[start_idx:end_idx]
+            line_text = " ".join(w[4].lower() for w in trans_words)
+            if any(kw in line_text for kw in ignored_keywords):
+                continue
             if len(trans_words) >= 3:
                 day = trans_words[0][4]
                 month = trans_words[1][4]
