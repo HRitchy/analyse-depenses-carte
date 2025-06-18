@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import fitz  # PyMuPDF
 import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 st.set_page_config(
     page_title="Analyse de Relevé Bancaire Carte",
@@ -37,8 +39,6 @@ with st.sidebar:
 
 st.markdown("<div class='step-title'>1️⃣ Importez un relevé PDF</div>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("Choisissez un relevé de compte (PDF)", type=["pdf"])
-
-# ----------- PARSE PDF (version corrigée) ----------------
 
 @st.cache_data(show_spinner=False)
 def parse_pdf(file_bytes):
@@ -139,8 +139,6 @@ def parse_pdf(file_bytes):
     df = pd.DataFrame(transactions)
     return df, None
 
-# ----------- MAIN APP UI ----------------
-
 if uploaded_file:
     progress_bar = st.progress(0)
     with st.spinner("Analyse en cours..."):
@@ -151,20 +149,14 @@ if uploaded_file:
     if err or df is None or df.empty:
         st.error(err or "Aucune transaction trouvée. Format PDF non supporté.")
         st.stop()
-    # Format dates
     if not pd.api.types.is_datetime64_any_dtype(df["Date"]):
         df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
     df = df.dropna(subset=["Date"])
-
-    # --- FILTRAGE : Transactions carte ---
     df = df[df["Type"].str.contains("carte", case=False, na=False)].copy()
     if df.empty:
         st.warning("Aucune transaction par carte trouvée sur ce relevé.")
         st.stop()
-
     df = df.sort_values(by="Date").reset_index(drop=True)
-
-    # ------ Filtres classiques (date, recherche description) ------
     st.sidebar.markdown("---")
     st.sidebar.subheader("Filtres")
     min_date, max_date = df["Date"].min(), df["Date"].max()
@@ -175,32 +167,27 @@ if uploaded_file:
         max_value=max_date
     )
     search_txt = st.sidebar.text_input("Recherche dans description", "")
-
     mask = (
         (df["Date"] >= pd.to_datetime(date_range[0])) &
         (df["Date"] <= pd.to_datetime(date_range[1])) &
         (df["Description"].str.lower().str.contains(search_txt.lower()))
     )
     df_filtered = df[mask].copy().reset_index(drop=True)
-
-    # --------- Onglets principaux ---------
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "🏠 Aperçu général",
         "💳 Transactions",
         "📊 Visualisation",
+        "🧩 Répartition (camembert)",
+        "🏷️ Dépenses par commerçant",
+        "📅 Heatmap",
     ])
-
     # ----- 1. Aperçu général -----
     with tab1:
-
         if df_filtered.empty:
             st.warning("Aucune transaction ne correspond aux filtres sélectionnés.")
             st.stop()
-
         total_dep = df_filtered[df_filtered["Montant"] < 0]["Montant"].sum()
         st.metric("Total dépenses carte", f"{abs(total_dep):,.2f} €", delta=None)
-
-        # Dépenses par carte (tableau compact)
         st.markdown("**Dépenses par carte**")
         resume = (
             df_filtered[df_filtered["Montant"] < 0]
@@ -228,12 +215,9 @@ if uploaded_file:
             .sort_values("Montant", ascending=False)
             .reset_index()
         )
-
-        # Ajout d'une colonne indiquant la part de chaque description
         total_depenses = resume["Montant"].sum()
         if total_depenses != 0:
             resume["Pourcentage"] = (resume["Montant"] / total_depenses * 100).round(1)
-
         resume.index += 1
         format_dict = {
             "Montant": "{:,.2f} €",
@@ -248,12 +232,10 @@ if uploaded_file:
             use_container_width=True,
             height=200,
         )
-
     # ----- 2. Transactions -----
     with tab2:
         depenses_par_carte = df_filtered[df_filtered["Montant"] < 0].copy()
         depenses_par_carte = depenses_par_carte.sort_values("Date")
-        # Format de la date sans l'heure pour l'affichage
         if pd.api.types.is_datetime64_any_dtype(depenses_par_carte["Date"]):
             depenses_par_carte["Date"] = depenses_par_carte["Date"].dt.strftime("%d/%m/%Y")
         total_depenses_carte = abs(depenses_par_carte["Montant"].sum())
@@ -263,11 +245,9 @@ if uploaded_file:
             f"<div class='sub'>Dépense moyenne quotidienne : {moyenne_journaliere:,.2f} €</div>",
             unsafe_allow_html=True,
         )
-        # Style montant column: red for negatives, green for positives
         def color_montant(val):
             color = "red" if val < 0 else "green"
             return f"color: {color}"
-
         depenses_par_carte = depenses_par_carte.reset_index(drop=True)
         depenses_par_carte.index += 1
         styled_df = (
@@ -276,8 +256,7 @@ if uploaded_file:
             .format({"Montant": "{:+,.2f} €"})
         )
         st.dataframe(styled_df, use_container_width=True, height=460)
-
-    # ----- 3. Visualisation -----
+    # ----- 3. Visualisation temporelle -----
     with tab3:
         if df_filtered.empty:
             st.warning("Aucune transaction ne correspond aux filtres sélectionnés.")
@@ -287,10 +266,8 @@ if uploaded_file:
                 "Mode d'affichage",
                 ["Évolution cumulée", "Dépenses par jour"],
             )
-
             base = df_filtered[df_filtered["Montant"] < 0].copy()
             base["Montant"] = base["Montant"].abs()
-
             if view_option == "Évolution cumulée":
                 daily = (
                     base.groupby(base["Date"].dt.date)["Montant"].sum().reset_index()
@@ -315,8 +292,47 @@ if uploaded_file:
                     title="Dépenses par jour",
                 )
                 fig.update_layout(xaxis_title="Date", yaxis_title="Montant (€)")
-
             st.plotly_chart(fig, use_container_width=True)
-
+    # ----- 4. Camembert répartition dépenses -----
+    with tab4:
+        base = df_filtered[df_filtered["Montant"] < 0].copy()
+        base["Montant"] = base["Montant"].abs()
+        # Top 6 descriptions, reste en "Autres"
+        repart = base.groupby("Description")["Montant"].sum().reset_index()
+        if repart.shape[0] > 6:
+            top = repart.nlargest(6, "Montant")
+            autres = pd.DataFrame([["Autres", repart["Montant"].sum() - top["Montant"].sum()]], columns=["Description","Montant"])
+            cat_data = pd.concat([top, autres], ignore_index=True)
+        else:
+            cat_data = repart
+        fig = px.pie(cat_data, values="Montant", names="Description", title="Répartition des dépenses par catégorie (Description)")
+        st.plotly_chart(fig, use_container_width=True)
+    # ----- 5. Dépenses par commerçant (bar chart) -----
+    with tab5:
+        base = df_filtered[df_filtered["Montant"] < 0].copy()
+        base["Montant"] = base["Montant"].abs()
+        vendor_sum = base.groupby("Description")["Montant"].sum().reset_index()
+        top_vendors = vendor_sum.nlargest(10, "Montant")
+        fig = px.bar(top_vendors, x="Description", y="Montant",
+                     title="Top 10 commerçants/fournisseurs par montant dépensé",
+                     labels={"Montant":"€ dépensés", "Description":"Commerçant/Fournisseur"})
+        fig.update_layout(xaxis={'categoryorder':'total descending'})
+        st.plotly_chart(fig, use_container_width=True)
+    # ----- 6. Heatmap temporelle (jour/semaine) -----
+    with tab6:
+        base = df_filtered[df_filtered["Montant"] < 0].copy()
+        base["Montant"] = base["Montant"].abs()
+        if not base.empty:
+            base["Jour"] = base["Date"].dt.day_name()
+            base["Semaine"] = base["Date"].dt.isocalendar().week
+            pivot = base.groupby(['Semaine','Jour'])["Montant"].sum().unstack(fill_value=0)
+            days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            pivot = pivot.reindex(columns=days_order, fill_value=0)
+            fig, ax = plt.subplots(figsize=(9, 4))
+            sns.heatmap(pivot, annot=False, cmap="viridis", ax=ax)
+            ax.set_title("Dépenses hebdomadaires (Jour x Semaine)")
+            st.pyplot(fig)
+        else:
+            st.info("Pas assez de données pour afficher la heatmap.")
 else:
     st.info("Importez un relevé bancaire PDF pour démarrer l’analyse (étape 1).")
